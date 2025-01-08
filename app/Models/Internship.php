@@ -12,7 +12,10 @@ class Internship extends Model
         'leader_id',
         'project_id',
         'supervisor_id',
-        'status'
+        'status',
+        'campus',
+        'letter_url',
+        'member_photo_url',
     ];
 
     public function leader()
@@ -33,5 +36,10 @@ class Internship extends Model
     public function members()
     {
         return $this->belongsToMany(User::class, 'internship_members', 'internship_id', 'student_id');
+    }
+
+    public function progress()
+    {
+        return $this->hasMany(Progress::class);
     }
 }

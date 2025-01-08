@@ -14,9 +14,18 @@ Route::post('/supervisor/register', [App\Http\Controllers\Api\AuthController::cl
 Route::get('/supervisor', [App\Http\Controllers\Api\SupervisorController::class, 'getSupervisor'])->middleware('auth:sanctum');
 Route::delete('/supervisor/{id}', [App\Http\Controllers\Api\SupervisorController::class, 'destroy'])->middleware('auth:sanctum');
 
+Route::post('/grades/upload', [App\Http\Controllers\Api\GradeController::class, 'uploadGrade'])->middleware('auth:sanctum');
+Route::get('/grades/{id}', [App\Http\Controllers\Api\GradeController::class, 'getGrade'])->middleware('auth:sanctum');
+
+
 Route::apiResource('/internships', App\Http\Controllers\Api\InternshipController::class)->middleware('auth:sanctum');
 Route::get('/internships/user/{id}', [App\Http\Controllers\Api\InternshipController::class, 'getInternshipsByUserId'])->middleware('auth:sanctum');
 Route::get('/internships/supervisor/{supervisorId}', [App\Http\Controllers\Api\InternshipController::class, 'getInternshipsBySupervisorId'])->middleware('auth:sanctum');
+
+Route::get('/progress/supervisor', [App\Http\Controllers\Api\ProgressController::class, 'getUserProgressForSupervisor'])->middleware('auth:sanctum');
+Route::get('/progress/supervisor/{id}', [App\Http\Controllers\Api\ProgressController::class, 'getProgressDetailsByInternshipId'])->middleware('auth:sanctum');
+Route::get('/progress/user/{userId}', [App\Http\Controllers\Api\ProgressController::class, 'getUserProgressForUser'])->middleware('auth:sanctum');
+Route::post('/progress/store', [App\Http\Controllers\Api\ProgressController::class, 'store'])->middleware('auth:sanctum');
 
 
 Route::get('/projects', [App\Http\Controllers\Api\ProjectController::class, 'index'])->middleware('auth:sanctum');
