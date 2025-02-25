@@ -6,71 +6,60 @@ use App\Http\Controllers\Controller;
 use App\Models\Internship;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class InternshipController extends Controller
 {
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'leader_email' => 'required|email|exists:users,email',
-    //         'member_emails' => 'nullable|array',
-    //         'member_emails.*' => 'email|exists:users,email',
-    //         'project_id' => 'required|exists:projects,id',
-    //         'supervisor_id' => 'required|exists:users,id',
-    //         'campus' => 'required',
-    //         'letter_file' => 'required|file|mimes:pdf|max:2048',
-    //         'member_photo_file' => 'required|file|mimes:pdf|max:2048',
-    //     ]);
+    public function personalRegister(Request $request)
+    {
+        $request->validate([
+            'leader_email' => 'required|email|exists:users,email',
+            'project_id' => 'required|exists:projects,id',
+            'supervisor_id' => 'required|exists:users,id',
+            'campus' => 'required',
+            'letter_file' => 'required|file|mimes:pdf|max:2048',
+            'member_photo_file' => 'required|file|mimes:pdf|max:2048',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
+        ]);
 
-    //     // Cek apakah leader email valid
-    //     $leader = User::where('email', $request->leader_email)->first();
-    //     if (!$leader) {
-    //         return response()->json([
-    //             'status' => 422,
-    //             'message' => 'Email leader belum terdaftar.',
-    //         ], 422);
-    //     }
-    //     $invalidEmails = [];
-    //     if (!empty($request->member_emails)) {
-    //         foreach ($request->member_emails as $email) {
-    //             $user = User::where('email', $email)->first();
-    //             if (!$user) {
-    //                 $invalidEmails[] = $email;
-    //             }
-    //         }
-    //     }
-    //     if (!empty($invalidEmails)) {
-    //         return response()->json([
-    //             'status' => 422,
-    //             'message' => 'Beberapa email anggota belum terdaftar.',
-    //             'invalid_emails' => $invalidEmails,
-    //         ], 422);
-    //     }
+        $leader = User::where('email', $request->leader_email)->first();
+        if (!$leader) {
+            return response()->json([
+                'status' => 422,
+                'message' => 'Email leader belum terdaftar.',
+            ], 422);
+        }
 
-    //     // Semua email valid, lanjut ke penyimpanan file
-    //     $folderPath = "internship/{$leader->email}/pdf";
-    //     $letterPath = $request->file('letter_file')->store($folderPath, 'public');
-    //     $memberPhotoPath = $request->file('member_photo_file')->store($folderPath, 'public');
+        $folderPath = "internship/" . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $leader->email) . "/pdf";
+        $letterPath = $request->file('letter_file')->store($folderPath, 'public');
+        $memberPhotoPath = $request->file('member_photo_file')->store($folderPath, 'public');
 
-    //     // Buat data magang
-    //     $memberIds = User::whereIn('email', $request->member_emails)->pluck('id');
-    //     $internship = Internship::create([
-    //         'leader_id' => $leader->id,
-    //         'project_id' => $request->project_id,
-    //         'supervisor_id' => $request->supervisor_id,
-    //         'status' => 'pending',
-    //         'letter_url' => url("storage/$letterPath"),
-    //         'member_photo_url' => url("storage/$memberPhotoPath"),
-    //     ]);
-
-    //     $internship->members()->attach($memberIds);
-
-    //     return response()->json([
-    //         'status' => 201,
-    //         'message' => 'Pendaftaran magang berhasil.',
-    //         'data' => $internship,
-    //     ], 201);
-    // }
+        try {
+            $internship = Internship::create([
+                'leader_id' => $leader->id,
+                'project_id' => $request->project_id,
+                'supervisor_id' => $request->supervisor_id,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'campus' => $request->campus,
+                'status' => 'pending',
+                'letter_url' => url("storage/$letterPath"),
+                'member_photo_url' => url("storage/$memberPhotoPath"),
+            ]);
+            $internship->load(['leader', 'project', 'supervisor']);
+            return response()->json([
+                'message' => 'Pendaftaran magang berhasil.',
+                'data' => $internship,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Terjadi kesalahan saat menyimpan data magang.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
     public function store(Request $request)
     {
@@ -83,9 +72,11 @@ class InternshipController extends Controller
             'campus' => 'required',
             'letter_file' => 'required|file|mimes:pdf|max:2048',
             'member_photo_file' => 'required|file|mimes:pdf|max:2048',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date',
         ]);
-
-        // Cek apakah leader email valid
+        $memberEmails = $request->member_emails ?? [];
+        $memberIds = !empty($memberEmails) ? User::whereIn('email', $memberEmails)->pluck('id') : collect();
         $leader = User::where('email', $request->leader_email)->first();
         if (!$leader) {
             return response()->json([
@@ -93,8 +84,6 @@ class InternshipController extends Controller
                 'message' => 'Email leader belum terdaftar.',
             ], 422);
         }
-
-        // Validasi email anggota
         $invalidEmails = [];
         if (!empty($request->member_emails)) {
             $invalidEmails = array_diff($request->member_emails, User::whereIn('email', $request->member_emails)->pluck('email')->toArray());
@@ -106,13 +95,9 @@ class InternshipController extends Controller
                 'invalid_emails' => $invalidEmails,
             ], 422);
         }
-
-        // Penyimpanan file
         $folderPath = "internship/" . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $leader->email) . "/pdf";
         $letterPath = $request->file('letter_file')->store($folderPath, 'public');
         $memberPhotoPath = $request->file('member_photo_file')->store($folderPath, 'public');
-
-        // Transaksi untuk menyimpan data magang
         try {
             $memberIds = User::whereIn('email', $request->member_emails)->pluck('id');
 
@@ -124,14 +109,12 @@ class InternshipController extends Controller
                 'status' => 'pending',
                 'letter_url' => url("storage/$letterPath"),
                 'member_photo_url' => url("storage/$memberPhotoPath"),
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
             ]);
 
             $internship->members()->attach($memberIds);
-
-            // Muat hubungan yang diperlukan
             $internship->load(['leader', 'project', 'supervisor', 'members']);
-
-            // Response dengan format yang sama seperti GET by user id
             return response()->json([
                 'message' => 'Pendaftaran magang berhasil.',
                 'data' => $internship,
@@ -163,14 +146,74 @@ class InternshipController extends Controller
 
         $internship = Internship::findOrFail($id);
         $internship->update($request->only('status'));
-        return response()->json(['status' => 201, 'message' => 'Status magang berhasil diubah.', 'data' => $internship], 201);
+        return response()->json(['status' => 201, 'message' => 'Status magang berhasil diubah.', 'data' => $internship], 200);
     }
+
+    // public function destroy($id)
+    // {
+    //     $internship = Internship::where('leader_id', $id->leader_id)->first();
+
+    //     if (!$internship) {
+    //         return response()->json([
+    //             'status' => 404,
+    //             'message' => 'Data magang tidak ditemukan atau sudah dihapus.',
+    //         ], 404);
+    //     }
+
+    //     if ($id->user()->id !== $internship->leader_id) {
+    //         return response()->json([
+    //             'status' => 403,
+    //             'message' => 'Hanya ketua kelompok yang dapat melakukan pembatalan.',
+    //         ], 403);
+    //     }
+
+    //     try {
+    //         $internship->delete();
+
+    //         return response()->json([
+    //             'status' => 200,
+    //             'message' => 'Pendaftaran magang berhasil dibatalkan.',
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 500,
+    //             'message' => 'Terjadi kesalahan saat membatalkan pendaftaran.',
+    //             'error' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
 
     public function destroy($id)
     {
-        $internship = Internship::findOrFail($id);
-        $internship->delete();
-        return response()->json(['status' => 201, 'message' => 'Magang berhasil dibatalkan.'], 201);
+        $internship = Internship::where('id', $id)->first();
+        if (!$internship) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Data magang tidak ditemukan atau sudah dihapus.',
+            ], 404);
+        }
+
+        if (Auth::user()->id !== $internship->leader_id) {
+            return response()->json([
+                'status' => 403,
+                'message' => 'Hanya ketua kelompok yang dapat melakukan pembatalan.',
+            ], 403);
+        }
+
+        try {
+            $internship->delete();
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Pendaftaran magang berhasil dibatalkan.',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Terjadi kesalahan saat membatalkan pendaftaran.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function index()
@@ -210,6 +253,4 @@ class InternshipController extends Controller
 
         return response()->json(['status' => 200, 'message' => 'Data magang berhasil didapatkan', 'data' => $internships], 200);
     }
-
-    public function getNearestSchedule() {}
 }

@@ -16,6 +16,8 @@ class Internship extends Model
         'campus',
         'letter_url',
         'member_photo_url',
+        'start_date',
+        'end_date',
     ];
 
     public function leader()

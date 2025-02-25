@@ -24,12 +24,19 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('12345678'),
             'phone' => '08123456789'
         ]);
-
-        User::factory(10)->create([
+        User::factory()->create([
+            'name' => 'Supervisor',
+            'email' => 'supervisor@mail.com',
+            'roles' => 'supervisor',
+            'password' => Hash::make('12345678'),
+            'phone' => '08123456788'
+        ]);
+        User::factory()->create([
+            'name' => 'Student',
+            'email' => 'student@mail.com',
             'roles' => 'student',
-            'phone' => fn () => '08' . fake()->numerify('##########'),
-            'email' => fn (array $attributes) => $attributes['name'] . '@student.com',
-            'password' => Hash::make('12345678')
+            'password' => Hash::make('12345678'),
+            'phone' => '08123456788'
         ]);
     }
 }

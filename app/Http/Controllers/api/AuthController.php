@@ -11,6 +11,31 @@ use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
+
+    public function adminRegister(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+            'phone' => 'nullable',
+        ]);
+
+        if (User::where('email', $request->email)->exists()) {
+            return response()->json([
+                'message' => 'The email is already registered',
+            ], 400);
+        }
+
+        $admin = $request->all();
+        $admin['password'] = Hash::make($admin['password']);
+        $admin['roles'] = 'admin';
+
+        $user = User::create($admin);
+        return response()->json([
+            'message' => 'Admin registered successfully',
+            'data' => $user
+        ], 200);
+    }
     public function studentRegister(Request $request)
     {
         $request->validate([
