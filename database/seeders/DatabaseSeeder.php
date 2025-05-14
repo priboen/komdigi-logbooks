@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Project;
 use App\Models\User;
+use Database\Factories\ProjectFactory;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -32,11 +34,26 @@ class DatabaseSeeder extends Seeder
             'phone' => '08123456788'
         ]);
         User::factory()->create([
-            'name' => 'Student',
+            'name' => 'Student Alpha',
             'email' => 'student@mail.com',
             'roles' => 'student',
             'password' => Hash::make('12345678'),
-            'phone' => '08123456788'
+            'phone' => '08123456789'
         ]);
+        User::factory()->create([
+            'name' => 'Student Beta',
+            'email' => 'student1@mail.com',
+            'roles' => 'student',
+            'password' => Hash::make('12345678'),
+            'phone' => '08223456789'
+        ]);
+        User::factory()->create([
+            'name' => 'Student Charlie',
+            'email' => 'student2@mail.com',
+            'roles' => 'student',
+            'password' => Hash::make('12345678'),
+            'phone' => '08323456789'
+        ]);
+        ProjectFactory::new()->count(10)->create();
     }
 }

@@ -27,7 +27,7 @@ Route::get('/supervisor', [App\Http\Controllers\Api\SupervisorController::class,
 Route::delete('/supervisor/{id}', [App\Http\Controllers\Api\SupervisorController::class, 'destroy'])->middleware('auth:sanctum');
 
 Route::post('/grades/upload', [App\Http\Controllers\Api\GradeController::class, 'uploadGrade'])->middleware('auth:sanctum');
-Route::get('/grades/{id}', [App\Http\Controllers\Api\GradeController::class, 'getGrade'])->middleware('auth:sanctum');
+Route::get('/grades/{id}', [App\Http\Controllers\Api\GradeController::class, 'getGrade']);
 
 
 Route::apiResource('/internships', InternshipController::class)->middleware('auth:sanctum');
